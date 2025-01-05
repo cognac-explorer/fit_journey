@@ -1,0 +1,10 @@
+#counters {
+    display: flex;
+    justify-content: flex-start; /* Align items to the start */
+    gap: 50px; /* Add small gaps between counters */
+    margin-bottom: 20px;
+}
+#counters p {
+    margin: 0; /* Remove default margins */
+    font-size: 16px;
+}

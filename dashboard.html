@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <title>Sports Log Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body style="background-color: #121212; color: #ffffff;">
+    <h1>Sports Log Dashboard</h1>
+    <div id="counters">
+        <p>Total Runs: <span id="totalRuns">0</span></p>
+        <p>Runs This Year: <span id="runsThisYear">0</span></p>
+        <p>Average Runs Per Week: <span id="averageRunsPerWeek">0</span></p>
+    </div>
+    <div id="chart" style="width: 100%; height: 500px;"></div>
+
+    <script>
+        // Path to the local CSV file
+        const filePath = "sport_data_run.csv"; // Replace with the path to your local CSV file
+
+        // Fetch the CSV file
+        fetch(filePath)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Failed to load the CSV file.");
+                }
+                return response.text();
+            })
+            .then(csvText => {
+                // Parse CSV data
+                const rows = csvText.split("\n").map(row => row.split(","));
+
+                // Extract headers and data
+                const headers = rows[0];
+                const data = rows.slice(1).filter(row => row.length === headers.length);
+
+                // Parse data for two lines
+                const dates = [];
+                const distances = [];
+                const speeds = [];
+                const hover_info = [];
+                data.forEach(row => {
+                    const timestamp = new Date(row[0]);
+                    const dist = parseFloat(row[3]);
+                    const speed = parseFloat(row[4]);
+                    const hover = `Route: ${row[5]}<br>Features: ${row[6]}`;
+                    if (!isNaN(timestamp) && !isNaN(dist) && !isNaN(speed)) {
+                        dates.push(timestamp);
+                        distances.push(dist);
+                        speeds.push(speed);
+                        hover_info.push(hover);
+                    }
+                });
+
+                // Calculate counters
+                const currentYear = new Date().getFullYear();
+                const totalRuns = data.length;
+                const runsThisYear = data.filter(row => new Date(row[0]).getFullYear() === currentYear).length;
+                // Calculate average runs per week
+                const startDate = new Date(data[0][0]); // First run date
+                const endDate = new Date(data[data.length - 1][0]); // Last run date
+                const totalWeeks = Math.ceil((endDate - startDate) / (7 * 24 * 60 * 60 * 1000)); // Weeks between
+                const averageRunsPerWeek = totalWeeks > 0 ? (totalRuns / totalWeeks).toFixed(2) : 0;
+        
+                // Update counters in HTML
+                document.getElementById("totalRuns").textContent = totalRuns;
+                document.getElementById("runsThisYear").textContent = runsThisYear;
+                document.getElementById("averageRunsPerWeek").textContent = averageRunsPerWeek;
+
+                const gaps = [
+                    { start: "2023-05-15", end:	"2023-06-25", text:	"Allergy"},
+                    { start: "2023-06-30", end:	"2023-07-10", text:	"Slightly injured lower back"},
+                    { start: "2023-07-31", end:	"2023-09-30", text:	"Slightly injured lower back"},
+                    { start: "2023-10-25", end:	"2023-11-25", text:	"Illness"},
+                    { start: "2024-03-25", end:	"2024-04-20", text:	"Relocation+Illness"},
+                    { start: "2024-10-10", end:	"2024-11-10", text:	"Relocation"},
+                    { start: "2024-08-30", end:	"2025-01-10", text:	"Injured left shoulder after bicycle fall"},
+                    { start: "2024-12-05", end:	"2025-01-03", text:	"Illness"}
+                ];
+        
+                // Convert gap dates to Date objects
+                const gapShapes = gaps.map(gap => ({
+                    type: 'rect',
+                    xref: 'x',
+                    yref: 'paper',
+                    x0: gap.start,
+                    x1: gap.end,
+                    y0: 0,
+                    y1: 1,
+                    fillcolor: 'rgba(255, 0, 0, 0.07)', // Transparent red
+                    line: { width: 0 }
+                }));
+
+                const gapAnnotations = [];
+                const usedYPositions = [];
+                
+                gaps.forEach((gap, index) => {
+                    const midPoint = new Date((new Date(gap.start).getTime() + new Date(gap.end).getTime()) / 2);
+                    let yPosition = index % 2 == 0 ? 1.05 : 1.12;
+                
+                    gapAnnotations.push({
+                        x: midPoint,
+                        y: yPosition,
+                        xref: 'x',
+                        yref: 'paper',
+                        text: gap.text,
+                        showarrow: false,
+                        font: { color: 'red', size: 12 }
+                    });
+                });
+
+                // Create traces
+                const trace1 = {
+                    x: dates,
+                    y: distances,
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    name: 'Distance, km',
+                    marker: { color: 'cyan', size: 8, symbol: 'circle' },
+                    line: { width: 1, dash: 'dash' },
+                    text: hover_info,
+                    hoverinfo: 'x+y+text'
+                };
+
+                const trace2 = {
+                    x: dates,
+                    y: speeds,
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    name: 'Speed, km/h',
+                    marker: { color: 'magenta', size: 8, symbol: 'diamond' },
+                    line: { width: 1, dash: 'dash' },
+                    visible: 'legendonly'
+                };
+
+                // Layout customization
+                const layout = {
+                    title: { text: 'Runs', font: { color: '#ffffff' } },
+                    paper_bgcolor: '#121212',
+                    plot_bgcolor: '#1e1e1e',
+                    xaxis: {
+                        title: { text: 'Time', font: { color: '#ffffff' } },
+                        color: '#ffffff'
+                    },
+                    yaxis: {
+                        title: { text: 'Values', font: { color: '#ffffff' } },
+                        color: '#ffffff'
+                    },
+                    shapes: gapShapes,
+                    annotations: gapAnnotations,
+                    legend: {
+                        font: { color: '#ffffff' },
+                        bgcolor: '#1e1e1e',
+                        bordercolor: '#333333',
+                        borderwidth: 1
+                    }
+                };
+
+                Plotly.newPlot('chart', [trace1, trace2], layout);
+            })
+            .catch(error => console.error("Error loading CSV:", error));
+    </script>
+</body>
+</html>
