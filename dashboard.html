@@ -4,10 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"></script>
+    <script src="https://unpkg.com/cal-heatmap/dist/plugins/Legend.min.js"></script>
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"></script>
+    <script src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css">
     <title>Sports Log Dashboard</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body style="background-color: #121212; color: #ffffff;">
+<body style="background-color: #121212; color: #838583;">
     <h1>Sports Log Dashboard</h1>
     <div id="counters">
         <p>Total Runs: <span id="totalRuns">0</span></p>
@@ -15,12 +22,13 @@
         <p>Average Runs Per Week: <span id="averageRunsPerWeek">0</span></p>
     </div>
     <div id="chart" style="width: 100%; height: 500px;"></div>
+    <div id="heatmap"></div>
+    <div id="heatmap-legend"></div>
 
     <script>
-        // Path to the local CSV file
-        const filePath = "sport_data_run.csv"; // Replace with the path to your local CSV file
 
-        // Fetch the CSV file
+        const filePath = "sport_data_run.csv";
+
         fetch(filePath)
             .then(response => {
                 if (!response.ok) {
@@ -29,18 +37,16 @@
                 return response.text();
             })
             .then(csvText => {
-                // Parse CSV data
-                const rows = csvText.split("\n").map(row => row.split(","));
 
-                // Extract headers and data
+                const rows = csvText.split("\n").map(row => row.split(","));
                 const headers = rows[0];
                 const data = rows.slice(1).filter(row => row.length === headers.length);
 
-                // Parse data for two lines
                 const dates = [];
                 const distances = [];
                 const speeds = [];
                 const hover_info = [];
+
                 data.forEach(row => {
                     const timestamp = new Date(row[0]);
                     const dist = parseFloat(row[3]);
@@ -59,16 +65,16 @@
                 const totalRuns = data.length;
                 const runsThisYear = data.filter(row => new Date(row[0]).getFullYear() === currentYear).length;
                 // Calculate average runs per week
-                const startDate = new Date(data[0][0]); // First run date
-                const endDate = new Date(data[data.length - 1][0]); // Last run date
-                const totalWeeks = Math.ceil((endDate - startDate) / (7 * 24 * 60 * 60 * 1000)); // Weeks between
+                const startDate = new Date(data[0][0]);
+                const endDate = new Date(data[data.length - 1][0]);
+                const totalWeeks = Math.ceil((endDate - startDate) / (7 * 24 * 60 * 60 * 1000));
                 const averageRunsPerWeek = totalWeeks > 0 ? (totalRuns / totalWeeks).toFixed(2) : 0;
         
-                // Update counters in HTML
                 document.getElementById("totalRuns").textContent = totalRuns;
                 document.getElementById("runsThisYear").textContent = runsThisYear;
                 document.getElementById("averageRunsPerWeek").textContent = averageRunsPerWeek;
-
+                
+                //  TODO: read from CSV
                 const gaps = [
                     { start: "2023-05-15", end:	"2023-06-25", text:	"Allergy"},
                     { start: "2023-06-30", end:	"2023-07-10", text:	"Slightly injured lower back"},
@@ -95,7 +101,7 @@
 
                 const gapAnnotations = [];
                 const usedYPositions = [];
-                
+                // TODO: now annotation text looks ugly, improve it
                 gaps.forEach((gap, index) => {
                     const midPoint = new Date((new Date(gap.start).getTime() + new Date(gap.end).getTime()) / 2);
                     let yPosition = index % 2 == 0 ? 1.05 : 1.12;
@@ -111,11 +117,10 @@
                     });
                 });
 
-                // Create traces
                 const trace1 = {
                     x: dates,
                     y: distances,
-                    mode: 'lines+markers',
+                    mode: 'markers',
                     type: 'scatter',
                     name: 'Distance, km',
                     marker: { color: 'cyan', size: 8, symbol: 'circle' },
@@ -127,7 +132,7 @@
                 const trace2 = {
                     x: dates,
                     y: speeds,
-                    mode: 'lines+markers',
+                    mode: 'markers',
                     type: 'scatter',
                     name: 'Speed, km/h',
                     marker: { color: 'magenta', size: 8, symbol: 'diamond' },
@@ -159,8 +164,81 @@
                 };
 
                 Plotly.newPlot('chart', [trace1, trace2], layout);
+
+                const cal = new CalHeatmap();
+                cal.paint(
+                    {
+                        range: 24,
+                        date: {start: new Date('2023-01-01')},
+                        data: {
+                            source: 'sport_data_run.csv',  // TODO: already parsed above, use it
+                            type: 'csv',
+                            x: 'start_dt',
+                            y: d => +d['distance_km'],
+                            defaultValue: 0
+                        },
+                        domain: {
+                            type: 'month',
+                            gutter: 4,
+                            label: { text: 'MMM', textAlign: 'start', position: 'top' },
+                        },
+                        scale: {
+                            color: {
+                                type: 'linear',
+                                scheme: 'Plasma',
+                                domain: [0, 10]
+                            },
+                        },
+                        legend: {
+                            show: true,
+                            label: 'Daily Volume',
+                            width: 150,
+                            marginLeft: 10,
+                            marginRight: 10
+                        },
+                        subDomain: {
+                            type: 'ghDay',
+                            radius: 2,
+                            width: 11,
+                            height: 11,
+                            gutter: 4
+                        },
+                        itemSelector: "#heatmap"
+                    },
+                    [
+                        [
+                            Tooltip,
+                            {
+                                text: function (date, value, dayjsDate) {
+                                return (
+                                    (value != 0 ? value + 'km' : 'No data') + ' on ' + dayjsDate.format('LL')
+                                );
+                                },
+                            },
+                        ],
+                        [
+                            Legend,
+                            {
+                                tickSize: 0,
+                                width: 150,
+                                itemSelector: '#heatmap-legend',
+                                label: 'Distance, km',
+                            },
+                        ],
+                        [
+                            CalendarLabel,
+                            {
+                                width: 30,
+                                textAlign: 'start',
+                                text: () => dayjs.weekdaysShort().map((d, i) => (i % 2 == 0 ? '' : d)),
+                                padding: [25, 0, 0, 0],
+                            },
+                        ],
+                    ]    
+            );
             })
             .catch(error => console.error("Error loading CSV:", error));
+
     </script>
 </body>
 </html>
