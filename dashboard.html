@@ -1,29 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"></script>
-    <script src="https://unpkg.com/cal-heatmap/dist/plugins/Legend.min.js"></script>
-    <script src="https://unpkg.com/@popperjs/core@2"></script>
-    <script src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"></script>
-    <script src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <!-- <script src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"></script> -->
+    <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/Legend.min.js"></script> -->
+    <!-- <script src="https://unpkg.com/@popperjs/core@2"></script> -->
+    <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"></script> -->
+    <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"></script> -->
+    <!-- <link rel="stylesheet" href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"> -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <title>Sports Log Dashboard</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body style="background-color: #121212; color: #838583;">
-    <h1>Sports Log Dashboard</h1>
-    <div id="counters">
-        <p>Total Runs: <span id="totalRuns">0</span></p>
-        <p>Runs This Year: <span id="runsThisYear">0</span></p>
-        <p>Average Runs Per Week: <span id="averageRunsPerWeek">0</span></p>
-    </div>
-    <div id="chart" style="width: 100%; height: 500px;"></div>
-    <div id="heatmap"></div>
-    <div id="heatmap-legend"></div>
+
+<body>
 
     <script type="module">
         import { loadAllData, runDataStats } from './utils.js';
@@ -32,196 +28,310 @@
             bars: "data/bars.csv",
             gaps: "data/gaps.csv"
         };
-        async function processData() {
-            const dataMap = await loadAllData(files);
-            const { run: runData, bars: barsData, gaps: gapsData } = dataMap;
 
-            const dates = runData.map(row => new Date(row[0]));
-            const distances = runData.map(row => parseFloat(row[3]));
-            const speeds = runData.map(row => parseFloat(row[4]));
-            const hover_info = runData.map(row => `Route: ${row[5]}<br>Features: ${row[6]}`);
+        let dataMap = {};
+        dataMap = await loadAllData(files);
 
-            const bdates = barsData.map(row => new Date(row[0]));
-            const types = barsData.map(row => row[3]);
-            const total_reps = barsData.map(row => parseFloat(row[6]));
+        // Global filter state
+        let currentFilters = {
+            year: 'All Time',
+            groupBy: 'Month',
+            activity: 'Run'
+        };
 
-            runDataStats(runData);
-            // console.log(gapsData);
+        async function prepareRunData(data) {
+            const distanceData = [];
+            const speedData = [];
 
-            // Convert gap dates to Date objects
-            const gapShapes = gapsData.map(gap => ({
-                type: 'rect',
-                xref: 'x',
-                yref: 'paper',
-                x0: gap[0],
-                x1: gap[1],
-                y0: 0,
-                y1: 1,
-                fillcolor: 'rgba(255, 0, 0, 0.07)', // Transparent red
-                line: { width: 0 }
-            }));
+            data.forEach(row => {
+                const date = new Date(row[0]);
+                const distance = parseFloat(row[3]);
+                const speed = parseFloat(row[4]);
 
-            const gapAnnotations = [];
-            const usedYPositions = [];
-            // TODO: now annotation text looks ugly, improve it
-            gapsData.forEach((gap, index) => {
-                const midPoint = new Date((new Date(gap[0]).getTime() + new Date(gap[1]).getTime()) / 2);
-                let yPosition = index % 2 == 0 ? 1.05 : 1.12;
-            
-                gapAnnotations.push({
-                    x: midPoint,
-                    y: yPosition,
-                    xref: 'x',
-                    yref: 'paper',
-                    text: gap[2],
-                    showarrow: false,
-                    font: { color: 'red', size: 12 }
-                });
+                distanceData.push({ x: date, y: distance });
+                speedData.push({ x: date, y: speed });
             });
 
-            const trace1 = {
-                x: dates,
-                y: distances,
-                mode: 'markers',
-                type: 'scatter',
-                name: 'Distance, km',
-                marker: { color: 'cyan', size: 8, symbol: 'circle' },
-                line: { width: 1, dash: 'dash' },
-                text: hover_info,
-                hoverinfo: 'x+y+text'
+            return {
+                datasets: [
+                    {
+                        label: 'Distance, km',
+                        data: distanceData,
+                        borderColor: 'blue'
+                    },
+                    {
+                        label: 'Speed, km/h',
+                        data: speedData,
+                        borderColor: 'red'
+                    }
+                ]
             };
-
-            const trace2 = {
-                x: dates,
-                y: speeds,
-                mode: 'markers',
-                type: 'scatter',
-                name: 'Speed, km/h',
-                marker: { color: 'magenta', size: 8, symbol: 'diamond' },
-                line: { width: 1, dash: 'dash' },
-                visible: 'legendonly'
-            };
-            
-            const symbols = types.map(type =>
-                type === "pull_ups" ? "circle" :
-                type === "dips" ? "x" : "square"
-            );
-            const colors = types.map(color =>
-                color === "pull_ups" ? "green" :
-                color === "red" ? "x" : "blue"
-            );
-
-            const trace3 = {
-                x: bdates,
-                y: total_reps,
-                mode: 'markers',
-                type: 'scatter',
-                name: 'Bars reps',
-                marker: { color: colors, size: 8, symbol: symbols},
-                line: { width: 1, dash: 'dash' }
-                // visible: 'legendonly'
-            };
-
-            // Layout customization
-            const layout = {
-                title: { text: 'Runs', font: { color: '#ffffff' } },
-                paper_bgcolor: '#121212',
-                plot_bgcolor: '#1e1e1e',
-                xaxis: {
-                    title: { text: 'Time', font: { color: '#ffffff' } },
-                    color: '#ffffff'
-                },
-                yaxis: {
-                    title: { text: 'Values', font: { color: '#ffffff' } },
-                    color: '#ffffff'
-                },
-                shapes: gapShapes,
-                annotations: gapAnnotations,
-                legend: {
-                    font: { color: '#ffffff' },
-                    bgcolor: '#1e1e1e',
-                    bordercolor: '#333333',
-                    borderwidth: 1
-                }
-            };
-
-            Plotly.newPlot('chart', [trace1, trace2, trace3], layout);
-
-            const cal = new CalHeatmap();
-            cal.paint(
-                {
-                    range: 24,
-                    date: {start: new Date('2023-01-01')},
-                    data: {
-                        source: 'data/run.csv',  // TODO: already parsed above, use it
-                        type: 'csv',
-                        x: 'start_dt',
-                        y: d => +d['distance_km'],
-                        defaultValue: 0
-                    },
-                    domain: {
-                        type: 'month',
-                        gutter: 4,
-                        label: { text: 'MMM', textAlign: 'start', position: 'top' },
-                    },
-                    scale: {
-                        color: {
-                            type: 'linear',
-                            scheme: 'Plasma',
-                            domain: [0, 10]
-                        },
-                    },
-                    legend: {
-                        show: true,
-                        label: 'Daily Volume',
-                        width: 150,
-                        marginLeft: 10,
-                        marginRight: 10
-                    },
-                    subDomain: {
-                        type: 'ghDay',
-                        radius: 2,
-                        width: 11,
-                        height: 11,
-                        gutter: 4
-                    },
-                    itemSelector: "#heatmap"
-                },
-                [
-                    [
-                        Tooltip,
-                        {
-                            text: function (date, value, dayjsDate) {
-                            return (
-                                (value != 0 ? value + 'km' : 'No data') + ' on ' + dayjsDate.format('LL')
-                            );
-                            },
-                        },
-                    ],
-                    [
-                        Legend,
-                        {
-                            tickSize: 0,
-                            width: 150,
-                            itemSelector: '#heatmap-legend',
-                            label: 'Distance, km',
-                        },
-                    ],
-                    [
-                        CalendarLabel,
-                        {
-                            width: 30,
-                            textAlign: 'start',
-                            text: () => dayjs.weekdaysShort().map((d, i) => (i % 2 == 0 ? '' : d)),
-                            padding: [25, 0, 0, 0],
-                        },
-                    ],
-                ]    
-           );
         }
 
-        processData();
+        async function prepareBarsData(data) {
+            const dataA = [];
+            const dataB = [];
 
+            data.forEach(row => {
+                const date = new Date(row[0]);
+                const type = row[1];
+                const reps = parseFloat(row[4]);
+
+                if (type === 'pull_ups') {
+                    dataA.push({ x: date, y: reps });
+                } else {
+                    dataB.push({ x: date, y: reps });
+                }
+            });
+
+            return {
+                datasets: [
+                    {
+                        label: 'Pull-Ups',
+                        data: dataA,
+                        borderColor: 'blue'
+                    },
+                    {
+                        label: 'Dips',
+                        data: dataB,
+                        borderColor: 'red'
+                    }
+                ]
+            };
+        }
+
+        // Function to filter data by year
+        function filterDataByYear(data, year) {
+            console.log(currentFilters);
+            if (year === 'All Time') return data;
+            return data.filter(row => {
+                const rowYear = new Date(row[0]).getFullYear().toString();
+                return rowYear === year;
+            });
+        }
+
+        // Function to group data by time period
+        function groupDataByPeriod(data, groupBy) {
+            const grouped = {};
+            
+            data.forEach(row => {
+                const date = new Date(row[0]);
+                let key;
+                
+                switch(groupBy) {
+                    case 'Week':
+                        const weekStart = new Date(date);
+                        weekStart.setDate(date.getDate() - date.getDay());
+                        key = weekStart.toISOString().split('T')[0];
+                        break;
+                    case 'Month':
+                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                        break;
+                    case 'Quarter':
+                        const quarter = Math.floor(date.getMonth() / 3) + 1;
+                        key = `${date.getFullYear()}-Q${quarter}`;
+                        break;
+                    case 'Year':
+                        key = date.getFullYear().toString();
+                        break;
+                    default:
+                        return data; // No grouping
+                }
+                
+                if (!grouped[key]) {
+                    grouped[key] = [];
+                }
+                grouped[key].push(row);
+            });
+            
+            // Convert grouped data back to array format with aggregated values
+            return Object.entries(grouped).map(([period, rows]) => {
+                if (rows.length === 1) return rows[0];
+                
+                // Calculate averages for numeric columns
+                const avgRow = [period, rows[0][1]]; // Keep period and type
+                for (let i = 2; i < rows[0].length; i++) {
+                    const sum = rows.reduce((acc, row) => acc + (parseFloat(row[i]) || 0), 0);
+                    avgRow.push(sum / rows.length);
+                }
+                return avgRow;
+            });
+        }
+
+        async function updateChartWithFilters() {
+    
+            let data = currentFilters.activity === 'Run' ? dataMap.run : dataMap.bars;
+            data = filterDataByYear(data, currentFilters.year);
+            
+            // data = groupDataByPeriod(data, currentFilters.groupBy);
+
+            if (currentFilters.activity === 'Run') {
+                mainChart.data = await prepareRunData(data);
+            } else {
+                mainChart.data = await prepareBarsData(data);
+            }
+            mainChart.update();
+        }
+
+        const ctx = document.getElementById('myChart');
+        let mainChart;
+
+        const chartOptions = {
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'day',
+                        displayFormats: {
+                            day: 'MMM d'
+                        }
+                    },
+                    ticks: {
+                        autoSkip: true,
+                        maxTicksLimit: 5
+                    },
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    }
+                }
+            }
+        };
+
+        let chartData = await prepareRunData(filterDataByYear(dataMap.run, currentFilters.year));
+
+        mainChart = new Chart(ctx, {
+            // type: 'scatter',
+            type: 'line',
+            data: chartData,
+            options: chartOptions
+        });
+
+        // Function to update active navigation item
+        function setActiveNavItem(clickedElement) {
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Add active class to clicked element
+            clickedElement.classList.add('active');
+        }
+
+        window.updatePlot = async function (type, element) {
+            currentFilters.activity = type;
+            await updateChartWithFilters();
+            setActiveNavItem(element);
+        }
+
+        document.querySelectorAll('.year-filter').forEach(filterGroup => {
+            filterGroup.addEventListener('click', function(e) {
+                if (e.target.classList.contains('year-btn')) {
+                    filterGroup.querySelectorAll('.year-btn').forEach(sibling => {
+                        sibling.classList.remove('active');
+                    });
+                    e.target.classList.add('active');
+                    
+                    currentFilters.year = e.target.textContent.trim();
+                    updateChartWithFilters();
+                }
+            });
+        });
     </script>
+
+    <div class="container-fluid p-0">
+        <div class="row g-0">
+            <!-- Sidebar -->
+           <nav class="col-md-2 col-lg-2 sidebar">
+                <div class="sidebar-header">
+                    <h1 class="sidebar-title">
+                        SportSync
+                    </h1>
+                </div>
+                
+                <div class="nav-section">
+                    <div class="nav-section-title">Activities</div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" onclick="updatePlot('Run', this)">
+                                <i class="fas fa-running"></i>
+                                Running
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" onclick="updatePlot('Bars', this)">
+                                <i class="fas fa-grip-horizontal"></i>
+                                Bar Exercises
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="fas fa-dumbbell"></i>
+                                Weights
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="fa-brands fa-mix"></i>
+                                Combined Heatmap
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#">
+                                <i class="fas fa-trophy"></i>
+                                Best Results
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main Content -->
+            <div class="col-md-10 col-lg-10 main-content">
+
+                <!-- Filters & Groupings -->
+                <div class="filters-card">
+                    <div class="filter-group">
+                        <span class="filter-label">
+                            <i class="fas fa-filter"></i>
+                            Filter by:
+                        </span>
+                        <div class="year-filter">
+                            <button class="year-btn active">All Time</button>
+                            <button class="year-btn">2025</button>
+                            <button class="year-btn">2024</button>
+                            <button class="year-btn">2023</button>
+                        </div>
+                        
+                        <span class="filter-label ms-4">
+                            <i class="fas fa-calendar"></i>
+                            Group by:
+                        </span>
+                        <div class="year-filter">
+                            <button class="year-btn">Week</button>
+                            <button class="year-btn active">Month</button>
+                            <button class="year-btn">Quarter</button>
+                            <button class="year-btn">Year</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <canvas id="myChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </body>
+
 </html>

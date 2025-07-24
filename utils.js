@@ -46,3 +46,76 @@ export function runDataStats(runData) {
     document.getElementById("runsThisYear").textContent = runsThisYear;
     document.getElementById("averageRunsPerWeek").textContent = averageRunsPerWeek;
 }
+
+
+            // const cal = new CalHeatmap();
+        //     cal.paint(
+        //         {
+        //             range: 24,
+        //             date: {start: new Date('2023-01-01')},
+        //             data: {
+        //                 source: 'data/run.csv',  // TODO: already parsed above, use it
+        //                 type: 'csv',
+        //                 x: 'start_dt',
+        //                 y: d => +d['distance_km'],
+        //                 defaultValue: 0
+        //             },
+        //             domain: {
+        //                 type: 'month',
+        //                 gutter: 4,
+        //                 label: { text: 'MMM', textAlign: 'start', position: 'top' },
+        //             },
+        //             scale: {
+        //                 color: {
+        //                     type: 'linear',
+        //                     scheme: 'Plasma',
+        //                     domain: [0, 10]
+        //                 },
+        //             },
+        //             legend: {
+        //                 show: true,
+        //                 label: 'Daily Volume',
+        //                 width: 150,
+        //                 marginLeft: 10,
+        //                 marginRight: 10
+        //             },
+        //             subDomain: {
+        //                 type: 'ghDay',
+        //                 radius: 2,
+        //                 width: 11,
+        //                 height: 11,
+        //                 gutter: 4
+        //             },
+        //             itemSelector: "#heatmap"
+        //         },
+        //         [
+        //             [
+        //                 Tooltip,
+        //                 {
+        //                     text: function (date, value, dayjsDate) {
+        //                     return (
+        //                         (value != 0 ? value + 'km' : 'No data') + ' on ' + dayjsDate.format('LL')
+        //                     );
+        //                     },
+        //                 },
+        //             ],
+        //             [
+        //                 Legend,
+        //                 {
+        //                     tickSize: 0,
+        //                     width: 150,
+        //                     itemSelector: '#heatmap-legend',
+        //                     label: 'Distance, km',
+        //                 },
+        //             ],
+        //             [
+        //                 CalendarLabel,
+        //                 {
+        //                     width: 30,
+        //                     textAlign: 'start',
+        //                     text: () => dayjs.weekdaysShort().map((d, i) => (i % 2 == 0 ? '' : d)),
+        //                     padding: [25, 0, 0, 0],
+        //                 },
+        //             ],
+        //         ]    
+        //    );
