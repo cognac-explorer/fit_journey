@@ -22,21 +22,16 @@
 <body>
 
     <script type="module">
-        import { loadAllData, runDataStats } from './utils.js';
-        const files = {
-            run: "data/run.csv",
-            bars: "data/bars.csv",
-            gaps: "data/gaps.csv"
-        };
+        import { fetchCSVData, runDataStats } from './utils.js';
 
         let dataMap = {};
-        dataMap = await loadAllData(files);
+        dataMap = await fetchCSVData();
 
         // Global filter state
         let currentFilters = {
             year: 'All Time',
-            groupBy: 'Month',
-            activity: 'Run'
+            groupBy: 'Day',
+            activity: 'RUN'
         };
 
         async function prepareRunData(data) {
@@ -44,12 +39,8 @@
             const speedData = [];
 
             data.forEach(row => {
-                const date = new Date(row[0]);
-                const distance = parseFloat(row[3]);
-                const speed = parseFloat(row[4]);
-
-                distanceData.push({ x: date, y: distance });
-                speedData.push({ x: date, y: speed });
+                distanceData.push({ x: row.date, y: row.distance });
+                speedData.push({ x: row.date, y: row.speed });
             });
 
             return {
@@ -69,103 +60,105 @@
         }
 
         async function prepareBarsData(data) {
-            const dataA = [];
-            const dataB = [];
+            const types = ['pull_ups', 'dips', 'push_ups'];
+            const labels = ['Pull-ups', 'Dips', 'Push-ups'];
+            const colors = ['blue', 'red', 'brown'];
 
-            data.forEach(row => {
-                const date = new Date(row[0]);
-                const type = row[1];
-                const reps = parseFloat(row[4]);
+            const datasets = types.map((type, index) => {
+                const typeData = data
+                .filter(row => row.type === type)
+                .map(row => ({ x: row.date, y: row.reps }));
 
-                if (type === 'pull_ups') {
-                    dataA.push({ x: date, y: reps });
-                } else {
-                    dataB.push({ x: date, y: reps });
-                }
-            });
-
-            return {
-                datasets: [
-                    {
-                        label: 'Pull-Ups',
-                        data: dataA,
-                        borderColor: 'blue'
-                    },
-                    {
-                        label: 'Dips',
-                        data: dataB,
-                        borderColor: 'red'
-                    }
-                ]
-            };
+                return {
+                    label: labels[index],
+                    data: typeData,
+                    borderColor: colors[index]
+                };
+            }).filter(dataset => dataset.data.length > 0);
+            return { datasets };
         }
 
         // Function to filter data by year
         function filterDataByYear(data, year) {
-            console.log(currentFilters);
+            // console.log(currentFilters);
             if (year === 'All Time') return data;
             return data.filter(row => {
-                const rowYear = new Date(row[0]).getFullYear().toString();
+                const rowYear = row.date.getFullYear().toString();
                 return rowYear === year;
             });
         }
 
         // Function to group data by time period
         function groupDataByPeriod(data, groupBy) {
+
             const grouped = {};
-            
+
+            if (groupBy === 'Day') return data;
+
             data.forEach(row => {
-                const date = new Date(row[0]);
-                let key;
-                
-                switch(groupBy) {
+                let groupedTimeFactor;
+                switch (groupBy) {
                     case 'Week':
-                        const weekStart = new Date(date);
-                        weekStart.setDate(date.getDate() - date.getDay());
-                        key = weekStart.toISOString().split('T')[0];
+                        groupedTimeFactor = new Date(row.date);
+                        groupedTimeFactor.setDate(row.date.getDate() - row.date.getDay());
+                        groupedTimeFactor = groupedTimeFactor.toISOString().split('T')[0];
                         break;
                     case 'Month':
-                        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                        break;
-                    case 'Quarter':
-                        const quarter = Math.floor(date.getMonth() / 3) + 1;
-                        key = `${date.getFullYear()}-Q${quarter}`;
-                        break;
-                    case 'Year':
-                        key = date.getFullYear().toString();
+                        groupedTimeFactor = new Date(row.date)
+                        groupedTimeFactor.setDate(1);
+                        groupedTimeFactor.setHours(0, 0, 0, 0);
                         break;
                     default:
-                        return data; // No grouping
+                        return data;
                 }
-                
-                if (!grouped[key]) {
-                    grouped[key] = [];
+
+                if (!grouped[groupedTimeFactor]) {
+                    grouped[groupedTimeFactor] = {
+                        rows: []
+                    };
                 }
-                grouped[key].push(row);
+                grouped[groupedTimeFactor].rows.push(row);
             });
-            
-            // Convert grouped data back to array format with aggregated values
-            return Object.entries(grouped).map(([period, rows]) => {
+            console.log(grouped);
+            // Convert grouped data back to array format with proper aggregation
+            return Object.entries(grouped).map(([groupedTimeFactor, groupData]) => {
+                const rows = groupData.rows;
                 if (rows.length === 1) return rows[0];
-                
-                // Calculate averages for numeric columns
-                const avgRow = [period, rows[0][1]]; // Keep period and type
-                for (let i = 2; i < rows[0].length; i++) {
-                    const sum = rows.reduce((acc, row) => acc + (parseFloat(row[i]) || 0), 0);
-                    avgRow.push(sum / rows.length);
+
+                if (currentFilters.activity === 'RUN') {
+                    // Distance (sum)
+                    const totalDistance = rows.reduce((acc, row) => acc + (parseFloat(row.distance) || 0), 0);
+                    // Speed (average)
+                    const avgSpeed = rows.reduce((acc, row) => acc + (parseFloat(row.speed) || 0), 0) / rows.length;
+                    return {
+                        date: new Date(groupedTimeFactor),
+                        distance: totalDistance,
+                        speed: avgSpeed
+                    };
+                } else if (currentFilters.activity === 'BARS') {
+                    return ['pull_ups', 'dips', 'push_ups'].map(type => {
+                        const totalReps = rows
+                            .filter(row => row.type === type)
+                            .reduce((acc, row) => acc + (parseFloat(row.reps) || 0), 0);
+                        return {
+                            date: new Date(groupedTimeFactor),
+                            type: type,
+                            reps: totalReps
+                        };
+                    }).filter(entry => entry.reps > 0);
                 }
-                return avgRow;
-            });
+            }).flat();
         }
 
         async function updateChartWithFilters() {
-    
-            let data = currentFilters.activity === 'Run' ? dataMap.run : dataMap.bars;
-            data = filterDataByYear(data, currentFilters.year);
-            
-            // data = groupDataByPeriod(data, currentFilters.groupBy);
+            // console.log(dataMap);
+            let data = currentFilters.activity === 'RUN' ? dataMap.RUN : dataMap.BARS;
 
-            if (currentFilters.activity === 'Run') {
+            data = filterDataByYear(data, currentFilters.year);
+            // console.log('before', data);
+            data = groupDataByPeriod(data, currentFilters.groupBy);
+            // console.log('after', data);
+            if (currentFilters.activity === 'RUN') {
                 mainChart.data = await prepareRunData(data);
             } else {
                 mainChart.data = await prepareBarsData(data);
@@ -202,7 +195,7 @@
             }
         };
 
-        let chartData = await prepareRunData(filterDataByYear(dataMap.run, currentFilters.year));
+        let chartData = await prepareRunData(filterDataByYear(dataMap.RUN, currentFilters.year));
 
         mainChart = new Chart(ctx, {
             // type: 'scatter',
@@ -217,28 +210,35 @@
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('active');
             });
-            
+
             // Add active class to clicked element
             clickedElement.classList.add('active');
         }
 
         window.updatePlot = async function (type, element) {
             currentFilters.activity = type;
+
             await updateChartWithFilters();
             setActiveNavItem(element);
         }
 
         document.querySelectorAll('.year-filter').forEach(filterGroup => {
-            filterGroup.addEventListener('click', function(e) {
+            filterGroup.addEventListener('click', function (e) {
                 if (e.target.classList.contains('year-btn')) {
                     filterGroup.querySelectorAll('.year-btn').forEach(sibling => {
                         sibling.classList.remove('active');
                     });
                     e.target.classList.add('active');
-                    
                     currentFilters.year = e.target.textContent.trim();
-                    updateChartWithFilters();
                 }
+                else if (e.target.classList.contains('group-btn')) {
+                    filterGroup.querySelectorAll('.group-btn').forEach(sibling => {
+                        sibling.classList.remove('active');
+                    });
+                    e.target.classList.add('active');
+                    currentFilters.groupBy = e.target.textContent.trim();
+                }
+                updateChartWithFilters();
             });
         });
     </script>
@@ -246,24 +246,24 @@
     <div class="container-fluid p-0">
         <div class="row g-0">
             <!-- Sidebar -->
-           <nav class="col-md-2 col-lg-2 sidebar">
+            <nav class="col-md-2 col-lg-2 sidebar">
                 <div class="sidebar-header">
                     <h1 class="sidebar-title">
                         SportSync
                     </h1>
                 </div>
-                
+
                 <div class="nav-section">
                     <div class="nav-section-title">Activities</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link active" onclick="updatePlot('Run', this)">
+                            <a class="nav-link active" onclick="updatePlot('RUN', this)">
                                 <i class="fas fa-running"></i>
                                 Running
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" onclick="updatePlot('Bars', this)">
+                            <a class="nav-link" onclick="updatePlot('BARS', this)">
                                 <i class="fas fa-grip-horizontal"></i>
                                 Bar Exercises
                             </a>
@@ -307,22 +307,31 @@
                         </span>
                         <div class="year-filter">
                             <button class="year-btn active">All Time</button>
-                            <button class="year-btn">2025</button>
-                            <button class="year-btn">2024</button>
                             <button class="year-btn">2023</button>
+                            <button class="year-btn">2024</button>
+                            <button class="year-btn">2025</button>
                         </div>
-                        
+
                         <span class="filter-label ms-4">
                             <i class="fas fa-calendar"></i>
                             Group by:
                         </span>
                         <div class="year-filter">
-                            <button class="year-btn">Week</button>
-                            <button class="year-btn active">Month</button>
-                            <button class="year-btn">Quarter</button>
-                            <button class="year-btn">Year</button>
+                            <button class="group-btn active">Day</button>
+                            <button class="group-btn">Week</button>
+                            <button class="group-btn">Month</button>
                         </div>
+
+                        <!-- <span class="filter-label ms-4">
+                            <i class="fa-solid fa-chart-simple"></i>
+                            Show:
+                        </span>
+                        <div class="year-filter">
+                            <button class="year-btn active">Metrics</button>
+                            <button class="year-btn">Counts</button>
+                        </div> -->
                     </div>
+
                 </div>
 
                 <div>

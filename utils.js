@@ -1,34 +1,62 @@
-export async function fetchCSVData(filePath) {
-    try {
-        const response = await fetch(filePath);
-        const csvText = await response.text();
-        const rows = csvText.split("\n").map(row => row.split(","));
-        const headers = rows[0];
-        const data = rows.slice(1).filter(row => row.length === headers.length);
-        return data;
-    } catch (error) {
-        console.error('Error fetching CSV from ${filePath}:', error);
-        return null;
-    }
-}
+const FILES_MAP = {
+    RUN: "data/run.csv",
+    BARS: "data/bars.csv",
+    GAPS: "data/gaps.csv"
+};
 
-export async function loadAllData(files) {
-    const dataPromises = Object.entries(files).map(async ([key, filePath]) => {
-        const data = await fetchCSVData(filePath);
-        if (!data) {
-            console.error(`Failed to load data for ${key}.`);
+const COLUMNS_MAP = {
+    RUN: {
+        DATE: 0,
+        DISTANCE: 3,
+        SPEED: 4
+    },
+    BARS: {
+        DATE: 0,
+        TYPE: 1,
+        REPS: 4,
+    }
+};
+
+export async function fetchCSVData() {
+    const dataMap = {};
+    const promises = Object.keys(FILES_MAP).map(async (key) => {
+        try {
+            const filePath = FILES_MAP[key];
+
+            const response = await fetch(filePath);
+            const csvText = await response.text();
+            const rows = csvText.split("\n")
+            const headers = rows[0].split(',');
+            const dataRows = rows.slice(1);
+
+            if (key === 'RUN') {
+                dataMap[key] = dataRows.map(row => {
+                    const rowValues = row.split(',');
+                    return {
+                        date: new Date(rowValues[COLUMNS_MAP.RUN.DATE]),
+                        distance: parseFloat(rowValues[COLUMNS_MAP.RUN.DISTANCE]),
+                        speed: parseFloat(rowValues[COLUMNS_MAP.RUN.SPEED])
+                    };
+                });
+            } else if (key === 'BARS') {
+                dataMap[key] = dataRows.map(row => {
+                    const rowValues = row.split(',');
+                    return {
+                        date: new Date(rowValues[COLUMNS_MAP.BARS.DATE]),
+                        type: rowValues[COLUMNS_MAP.BARS.TYPE],
+                        reps: rowValues[COLUMNS_MAP.BARS.REPS]
+                    };
+                });
+            }
+
+        }
+        catch (error) {
+            console.error('Error fetching ${key} data from CSV ${filePath}:', error);
             return null;
         }
-        return [key, data];
     });
-
-    const dataEntries = await Promise.all(dataPromises);
-    if (dataEntries.includes(null)) {
-        console.error("Failed to load some data.");
-        return;
-    }
-
-    return Object.fromEntries(dataEntries);
+    await Promise.all(promises);
+    return dataMap;
 }
 
 export function runDataStats(runData) {
@@ -117,5 +145,5 @@ export function runDataStats(runData) {
         //                     padding: [25, 0, 0, 0],
         //                 },
         //             ],
-        //         ]    
+        //         ]
         //    );

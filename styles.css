@@ -120,7 +120,8 @@ body {
   gap: 0.5rem;
 }
 
-.year-btn {
+.year-btn,
+.group-btn {
   padding: 0.5rem 1rem;
   border: 1px solid var(--border-color);
   background: transparent;
@@ -130,12 +131,14 @@ body {
   font-weight: 500;
 }
 
-.year-btn:hover {
+.year-btn:hover
+.group-btn:hover {
   border-color: var(--accent-blue);
   color: var(--accent-blue);
 }
 
-.year-btn.active {
+.year-btn.active,
+.group-btn.active {
   background: var(--accent-blue);
   color: var(--bg-primary);
   border-color: var(--accent-blue);
