@@ -2,327 +2,110 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
 
-    <!-- <script src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"></script> -->
-    <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/Legend.min.js"></script> -->
-    <!-- <script src="https://unpkg.com/@popperjs/core@2"></script> -->
-    <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"></script> -->
-    <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"></script> -->
-    <!-- <link rel="stylesheet" href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"> -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <title>Sports Log Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
+  <!-- <script src="https://unpkg.com/cal-heatmap/dist/cal-heatmap.min.js"></script> -->
+  <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/Legend.min.js"></script> -->
+  <!-- <script src="https://unpkg.com/@popperjs/core@2"></script> -->
+  <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/Tooltip.min.js"></script> -->
+  <!-- <script src="https://unpkg.com/cal-heatmap/dist/plugins/CalendarLabel.min.js"></script> -->
+  <!-- <link rel="stylesheet" href="https://unpkg.com/cal-heatmap/dist/cal-heatmap.css"> -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <title>Sports Log Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
+  <script type="module">
+    import { SportsDashboard } from './src/sports-dashboard.js';
+    const sportsDashboard = new SportsDashboard();
+    sportsDashboard.init();
+  </script>
 
-    <script type="module">
-        import { fetchCSVData, runDataStats } from './utils.js';
+  <div class="container-fluid p-0">
+    <div class="row g-0">
+      <!-- Sidebar -->
+      <nav class="col-md-2 col-lg-2 sidebar">
+        <div class="sidebar-header">
+          <h1 class="sidebar-title">
+            SportSync
+          </h1>
+        </div>
 
-        let dataMap = {};
-        dataMap = await fetchCSVData();
+        <div class="nav-section">
+          <div class="nav-section-title">Activities</div>
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link active" data-activity="RUN">
+                <i class="fas fa-running"></i>
+                Running
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-activity="BARS">
+                <i class="fas fa-grip-horizontal"></i>
+                Bar Exercises
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" data-activity="WEIGHTS">
+                <i class="fas fa-dumbbell"></i>
+                Weights
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">
+                <i class="fa-brands fa-mix"></i>
+                Combined Heatmap
+              </a>
+            </li>
+          </ul>
+        </div>
 
-        // Global filter state
-        let currentFilters = {
-            year: 'All Time',
-            groupBy: 'Day',
-            activity: 'RUN'
-        };
+        <div class="nav-section">
+          <ul class="nav flex-column">
+            <li class="nav-item">
+              <a class="nav-link" href="#">
+                <i class="fas fa-trophy"></i>
+                Best Results
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
 
-        async function prepareRunData(data) {
-            const distanceData = [];
-            const speedData = [];
+      <!-- Main Content -->
+      <div class="col-md-10 col-lg-10 main-content">
 
-            data.forEach(row => {
-                distanceData.push({ x: row.date, y: row.distance });
-                speedData.push({ x: row.date, y: row.speed });
-            });
+        <!-- Filters & Groupings -->
+        <div class="filters-card">
+          <div class="filter-group">
+            <span class="filter-label">
+              <i class="fas fa-filter"></i>
+              Filter by:
+            </span>
+            <div class="year-filter">
+              <button class="year-btn active" data-year="All Time">All Time</button>
+              <button class="year-btn" data-year="2023">2023</button>
+              <button class="year-btn" data-year="2024">2024</button>
+              <button class="year-btn" data-year="2025">2025</button>
+            </div>
 
-            return {
-                datasets: [
-                    {
-                        label: 'Distance, km',
-                        data: distanceData,
-                        borderColor: 'blue'
-                    },
-                    {
-                        label: 'Speed, km/h',
-                        data: speedData,
-                        borderColor: 'red'
-                    }
-                ]
-            };
-        }
+            <span class="filter-label ms-4">
+              <i class="fas fa-calendar"></i>
+              Group by:
+            </span>
+            <div class="year-filter">
+              <button class="group-btn active" data-group="Day">Day</button>
+              <button class="group-btn" data-group="Week">Week</button>
+              <button class="group-btn" data-group="Month">Month</button>
+            </div>
 
-        async function prepareBarsData(data) {
-            const types = ['pull_ups', 'dips', 'push_ups'];
-            const labels = ['Pull-ups', 'Dips', 'Push-ups'];
-            const colors = ['blue', 'red', 'brown'];
-
-            const datasets = types.map((type, index) => {
-                const typeData = data
-                .filter(row => row.type === type)
-                .map(row => ({ x: row.date, y: row.reps }));
-
-                return {
-                    label: labels[index],
-                    data: typeData,
-                    borderColor: colors[index]
-                };
-            }).filter(dataset => dataset.data.length > 0);
-            return { datasets };
-        }
-
-        // Function to filter data by year
-        function filterDataByYear(data, year) {
-            // console.log(currentFilters);
-            if (year === 'All Time') return data;
-            return data.filter(row => {
-                const rowYear = row.date.getFullYear().toString();
-                return rowYear === year;
-            });
-        }
-
-        // Function to group data by time period
-        function groupDataByPeriod(data, groupBy) {
-
-            const grouped = {};
-
-            if (groupBy === 'Day') return data;
-
-            data.forEach(row => {
-                let groupedTimeFactor;
-                switch (groupBy) {
-                    case 'Week':
-                        groupedTimeFactor = new Date(row.date);
-                        groupedTimeFactor.setDate(row.date.getDate() - row.date.getDay());
-                        groupedTimeFactor = groupedTimeFactor.toISOString().split('T')[0];
-                        break;
-                    case 'Month':
-                        groupedTimeFactor = new Date(row.date)
-                        groupedTimeFactor.setDate(1);
-                        groupedTimeFactor.setHours(0, 0, 0, 0);
-                        break;
-                    default:
-                        return data;
-                }
-
-                if (!grouped[groupedTimeFactor]) {
-                    grouped[groupedTimeFactor] = {
-                        rows: []
-                    };
-                }
-                grouped[groupedTimeFactor].rows.push(row);
-            });
-            console.log(grouped);
-            // Convert grouped data back to array format with proper aggregation
-            return Object.entries(grouped).map(([groupedTimeFactor, groupData]) => {
-                const rows = groupData.rows;
-                if (rows.length === 1) return rows[0];
-
-                if (currentFilters.activity === 'RUN') {
-                    // Distance (sum)
-                    const totalDistance = rows.reduce((acc, row) => acc + (parseFloat(row.distance) || 0), 0);
-                    // Speed (average)
-                    const avgSpeed = rows.reduce((acc, row) => acc + (parseFloat(row.speed) || 0), 0) / rows.length;
-                    return {
-                        date: new Date(groupedTimeFactor),
-                        distance: totalDistance,
-                        speed: avgSpeed
-                    };
-                } else if (currentFilters.activity === 'BARS') {
-                    return ['pull_ups', 'dips', 'push_ups'].map(type => {
-                        const totalReps = rows
-                            .filter(row => row.type === type)
-                            .reduce((acc, row) => acc + (parseFloat(row.reps) || 0), 0);
-                        return {
-                            date: new Date(groupedTimeFactor),
-                            type: type,
-                            reps: totalReps
-                        };
-                    }).filter(entry => entry.reps > 0);
-                }
-            }).flat();
-        }
-
-        async function updateChartWithFilters() {
-            // console.log(dataMap);
-            let data = currentFilters.activity === 'RUN' ? dataMap.RUN : dataMap.BARS;
-
-            data = filterDataByYear(data, currentFilters.year);
-            // console.log('before', data);
-            data = groupDataByPeriod(data, currentFilters.groupBy);
-            // console.log('after', data);
-            if (currentFilters.activity === 'RUN') {
-                mainChart.data = await prepareRunData(data);
-            } else {
-                mainChart.data = await prepareBarsData(data);
-            }
-            mainChart.update();
-        }
-
-        const ctx = document.getElementById('myChart');
-        let mainChart;
-
-        const chartOptions = {
-            scales: {
-                x: {
-                    type: 'time',
-                    time: {
-                        unit: 'day',
-                        displayFormats: {
-                            day: 'MMM d'
-                        }
-                    },
-                    ticks: {
-                        autoSkip: true,
-                        maxTicksLimit: 5
-                    },
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
-                },
-                y: {
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)'
-                    }
-                }
-            }
-        };
-
-        let chartData = await prepareRunData(filterDataByYear(dataMap.RUN, currentFilters.year));
-
-        mainChart = new Chart(ctx, {
-            // type: 'scatter',
-            type: 'line',
-            data: chartData,
-            options: chartOptions
-        });
-
-        // Function to update active navigation item
-        function setActiveNavItem(clickedElement) {
-            // Remove active class from all nav links
-            document.querySelectorAll('.nav-link').forEach(link => {
-                link.classList.remove('active');
-            });
-
-            // Add active class to clicked element
-            clickedElement.classList.add('active');
-        }
-
-        window.updatePlot = async function (type, element) {
-            currentFilters.activity = type;
-
-            await updateChartWithFilters();
-            setActiveNavItem(element);
-        }
-
-        document.querySelectorAll('.year-filter').forEach(filterGroup => {
-            filterGroup.addEventListener('click', function (e) {
-                if (e.target.classList.contains('year-btn')) {
-                    filterGroup.querySelectorAll('.year-btn').forEach(sibling => {
-                        sibling.classList.remove('active');
-                    });
-                    e.target.classList.add('active');
-                    currentFilters.year = e.target.textContent.trim();
-                }
-                else if (e.target.classList.contains('group-btn')) {
-                    filterGroup.querySelectorAll('.group-btn').forEach(sibling => {
-                        sibling.classList.remove('active');
-                    });
-                    e.target.classList.add('active');
-                    currentFilters.groupBy = e.target.textContent.trim();
-                }
-                updateChartWithFilters();
-            });
-        });
-    </script>
-
-    <div class="container-fluid p-0">
-        <div class="row g-0">
-            <!-- Sidebar -->
-            <nav class="col-md-2 col-lg-2 sidebar">
-                <div class="sidebar-header">
-                    <h1 class="sidebar-title">
-                        SportSync
-                    </h1>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Activities</div>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link active" onclick="updatePlot('RUN', this)">
-                                <i class="fas fa-running"></i>
-                                Running
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" onclick="updatePlot('BARS', this)">
-                                <i class="fas fa-grip-horizontal"></i>
-                                Bar Exercises
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="fas fa-dumbbell"></i>
-                                Weights
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="fa-brands fa-mix"></i>
-                                Combined Heatmap
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-
-                <div class="nav-section">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="#">
-                                <i class="fas fa-trophy"></i>
-                                Best Results
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-
-            <!-- Main Content -->
-            <div class="col-md-10 col-lg-10 main-content">
-
-                <!-- Filters & Groupings -->
-                <div class="filters-card">
-                    <div class="filter-group">
-                        <span class="filter-label">
-                            <i class="fas fa-filter"></i>
-                            Filter by:
-                        </span>
-                        <div class="year-filter">
-                            <button class="year-btn active">All Time</button>
-                            <button class="year-btn">2023</button>
-                            <button class="year-btn">2024</button>
-                            <button class="year-btn">2025</button>
-                        </div>
-
-                        <span class="filter-label ms-4">
-                            <i class="fas fa-calendar"></i>
-                            Group by:
-                        </span>
-                        <div class="year-filter">
-                            <button class="group-btn active">Day</button>
-                            <button class="group-btn">Week</button>
-                            <button class="group-btn">Month</button>
-                        </div>
-
-                        <!-- <span class="filter-label ms-4">
+            <!-- <span class="filter-label ms-4">
                             <i class="fa-solid fa-chart-simple"></i>
                             Show:
                         </span>
@@ -330,16 +113,16 @@
                             <button class="year-btn active">Metrics</button>
                             <button class="year-btn">Counts</button>
                         </div> -->
-                    </div>
+          </div>
 
-                </div>
-
-                <div>
-                    <canvas id="myChart"></canvas>
-                </div>
-            </div>
         </div>
+
+        <div>
+          <canvas id="myChart"></canvas>
+        </div>
+      </div>
     </div>
+  </div>
 
 </body>
 
