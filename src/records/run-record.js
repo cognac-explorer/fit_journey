@@ -42,6 +42,17 @@ class RunRecord {
     }
     return tooltip;
   }
+
+  static aggregate(anchorDate, groupedRows) {
+    const totalDistance = groupedRows.reduce((acc, row) => acc + (row.distance || 0), 0);
+    const avgSpeed = groupedRows.reduce((acc, row) => acc + (row.speed || 0), 0) / groupedRows.length;
+
+    return new RunRecord({
+      date: new Date(anchorDate),
+      distance: totalDistance,
+      speed: avgSpeed
+    });
+  }
 }
 
 export { RunRecord };

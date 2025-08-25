@@ -18,7 +18,6 @@ class SportsDashboard {
   }
 
   updateChart() {
-    console.log(this.filterManager.options);
     let records = this.dataManager.getRecords(this.filterManager.options.activity);
     records = this.filterManager.applyFilters(records);
     this.chartRenderer.renderActivity(records);
