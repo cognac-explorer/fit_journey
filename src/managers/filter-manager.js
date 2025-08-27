@@ -1,5 +1,3 @@
-import { RunRecord } from '../records/run-record.js';
-
 class FilterManager {
   constructor() {
     this.options = {
@@ -26,11 +24,7 @@ class FilterManager {
   }
 
   applyFilters(records) {
-    records = this.timeFilter(records);
-    console.log(records);
-    records = this.timeGroupBy(records);
-    console.log(records);
-    return records;
+    return this.timeGroupBy(this.timeFilter(records));
   }
 
   timeFilter(records) {
@@ -43,58 +37,39 @@ class FilterManager {
   }
 
   timeGroupBy(records) {
-    const grouped = {};
+    const periodRecords = {};
     const groupBy = this.options.groupBy;
 
     if (groupBy === 'Day') return records;
 
     records.forEach(row => {
-      let groupedTimeFactor;
+      let periodDate;
       switch (groupBy) {
         case 'Week':
-          groupedTimeFactor = new Date(row.date);
-          groupedTimeFactor.setDate(row.date.getDate() - row.date.getDay());
-          groupedTimeFactor = groupedTimeFactor.toISOString().split('T')[0];
+          periodDate = new Date(row.date);
+          periodDate.setDate(row.date.getDate() - row.date.getDay());
+          periodDate = periodDate.toISOString().split('T')[0];
           break;
         case 'Month':
-          groupedTimeFactor = new Date(row.date)
-          groupedTimeFactor.setDate(1);
-          groupedTimeFactor.setHours(0, 0, 0, 0);
+          periodDate = new Date(row.date)
+          periodDate.setDate(1);
+          periodDate.setHours(0, 0, 0, 0);
           break;
         default:
           return data;
       }
 
-      if (!grouped[groupedTimeFactor]) {
-        grouped[groupedTimeFactor] = {
-          rows: []
-        };
+      if (!periodRecords[periodDate]) {
+        periodRecords[periodDate] = [];
       }
-      grouped[groupedTimeFactor].rows.push(row);
+      periodRecords[periodDate].push(row);
     });
 
-    // console.log(grouped);
     const RecordClass = records[0].constructor;
     // Convert grouped data back to array format with proper aggregation
-    return Object.entries(grouped).map(([groupedTimeFactor, groupData]) => {
-      const rows = groupData.rows;
-      if (rows.length === 1) return rows[0];
-      return RecordClass.aggregate(groupedTimeFactor, groupData.rows);
-
-      // if (this.options.activity === 'RUN') {
-      // } else if (this.options.groupBy.activity === 'BARS') {
-      //   return ['pull_ups', 'dips', 'push_ups'].map(type => {
-      //     const totalReps = rows
-      //       .filter(row => row.type === type)
-      //       .reduce((acc, row) => acc + (parseFloat(row.reps) || 0), 0);
-      //     return {
-      //       date: new Date(groupedTimeFactor),
-      //       type: type,
-      //       reps: totalReps
-      //     };
-      //   }
-      // ).filter(entry => entry.reps > 0);
-
+    return Object.entries(periodRecords).map(([periodDate, records]) => {
+      if (records.length === 1) return records[0];
+      return RecordClass.aggregate(periodDate, records);
     }).flat();
   }
 }

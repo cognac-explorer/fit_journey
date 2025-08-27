@@ -5,14 +5,15 @@ class RunRecord {
   static getChartConfig() {
     return {
       datasets: [
-        { label: 'Distance (km)', field: 'distance', color: 'blue' },
-        { label: 'Speed (km/h)', field: 'speed', color: 'red' }
+        { type: 'run', label: 'Distance (km)', field: 'distance', color: 'blue' },
+        { type: 'run', label: 'Speed (km/h)', field: 'speed', color: 'red' }
       ]
     };
   }
 
-  constructor(data, context) {
+  constructor(data) {
     this.date = data.date;
+    this.type = 'run';
     this.distance = data.distance;
     this.speed = data.speed;
     this.route = data.route;
@@ -43,12 +44,13 @@ class RunRecord {
     return tooltip;
   }
 
-  static aggregate(anchorDate, groupedRows) {
-    const totalDistance = groupedRows.reduce((acc, row) => acc + (row.distance || 0), 0);
-    const avgSpeed = groupedRows.reduce((acc, row) => acc + (row.speed || 0), 0) / groupedRows.length;
+  static aggregate(periodDate, records) {
+    const totalDistance = records.reduce((acc, row) => acc + (row.distance || 0), 0);
+    const avgSpeed = records.reduce((acc, row) => acc + (row.speed || 0), 0) / records.length;
 
     return new RunRecord({
-      date: new Date(anchorDate),
+      date: new Date(periodDate),
+      type: 'run',
       distance: totalDistance,
       speed: avgSpeed
     });

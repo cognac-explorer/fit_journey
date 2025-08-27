@@ -1,14 +1,18 @@
 import { RunRecord } from '../records/run-record.js';
+import { BarsRecord } from '../records/bars-record.js';
+import { WeightsRecord } from '../records/weights-record.js';
 
 class DataManager {
   constructor() {
     this.runRecords = [];
-    // this.barRecords = [];
-    // this.weightRecords = [];
+    this.barRecords = [];
+    this.weightRecords = [];
   }
 
   async loadData() {
     this.runRecords = await this.loadActivity(RunRecord);
+    this.barRecords = await this.loadActivity(BarsRecord);
+    this.weightRecords = await this.loadActivity(WeightsRecord);
   }
 
   async loadActivity(RecordClass) {
@@ -22,9 +26,9 @@ class DataManager {
 
   getRecords(activity) {
     const recordMap = {
-        'RUN': this.runRecords
-        // 'BARS': this.barRecords,
-        // 'WEIGHTS': this.weightRecords
+        'RUN': this.runRecords,
+        'BARS': this.barRecords,
+        'WEIGHTS': this.weightRecords
     };
     return recordMap[activity] || [];
   }

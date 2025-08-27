@@ -4,11 +4,10 @@ class ChartRenderer {
       this.ctx = document.getElementById(canvasId);
   }
 
-  renderActivity(records) {
+  render(records) {
     if (records.length === 0) return;
 
-    const config = records[0].constructor.getChartConfig();
-    const chartData = this.prepareChartData(records, config);
+    const chartData = this.prepareChartData(records);
 
     if (this.chart) {
       this.chart.data = chartData;
@@ -22,15 +21,18 @@ class ChartRenderer {
     }
   }
 
-  prepareChartData(records, config) {
+  prepareChartData(records) {
+    const config = records[0].constructor.getChartConfig();
     return {
       datasets: config.datasets.map(datasetConfig => ({
         label: datasetConfig.label,
-        data: records.map(record => ({
-          x: record.date,
-          y: record[datasetConfig.field],
-          tooltip: record.getTooltipText()
-        })),
+        data: records
+          .filter(record => record.type === datasetConfig.type)
+          .map(record => ({
+            x: record.date,
+            y: record[datasetConfig.field],
+            tooltip: record.getTooltipText()
+          })),
         borderColor: datasetConfig.color,
         backgroundColor: datasetConfig.color
       }))
