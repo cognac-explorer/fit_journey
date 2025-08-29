@@ -1,18 +1,23 @@
 class WeightsRecord {
-
   static COLUMNS = { DATE: 0, TYPE: 3, FORMULA: 4, BEST_SET: 5, BEST_WEIGHT: 6, TOTAL: 7, NOTES: 8, ADDITIONALS: 9 };
   static CSV_FILE = "data/weights.csv";
 
-  static getChartConfig() {
+  static metricsOptions = [
+    { value: 'total', label: 'Total Volume' },
+    { value: 'best_weight', label: 'Best Weight' }
+  ];
+  static datasets = [
+    { type: 'squat', label: 'Squat Total', field: 'total', color: 'blue' },
+    { type: 'squat', label: 'Squat Best', field: 'best_weight', color: 'blue' },
+    { type: 'deadlift', label: 'Deadlift Total', field: 'total', color: 'red' },
+    { type: 'deadlift', label: 'Deadlift Best', field: 'best_weight', color: 'red' },
+    { type: 'bench', label: 'Bench Total', field: 'total', color: 'green' },
+    { type: 'bench', label: 'Bench Best', field: 'best_weight', color: 'green' }
+  ];
+
+  static getChartConfig(metric) {
     return {
-      datasets: [
-        { type: 'squat', label: 'Squat Total', field: 'total', color: 'blue' },
-        { type: 'squat', label: 'Squat Best', field: 'best_weight', color: 'blue' },
-        { type: 'deadlift', label: 'Deadlift Total', field: 'total', color: 'red' },
-        { type: 'deadlift', label: 'Deadlift Best', field: 'best_weight', color: 'red' },
-        { type: 'bench', label: 'Bench Total', field: 'total', color: 'green' },
-        { type: 'bench', label: 'Bench Best', field: 'best_weight', color: 'green' }
-      ]
+      datasets: this.datasets.filter(datasetConfig => datasetConfig.field === metric)
     };
   }
 

@@ -4,10 +4,14 @@ class ChartRenderer {
       this.ctx = document.getElementById(canvasId);
   }
 
-  render(records) {
+  render(records, options) {
     if (records.length === 0) return;
 
-    const chartData = this.prepareChartData(records);
+    const config = records[0].constructor.getChartConfig(options.metric);
+    const metricOptions = records[0].constructor.metricsOptions;
+
+    this.updateMetricSelector(metricOptions, options.metric);
+    const chartData = this.prepareChartData(records, config);
 
     if (this.chart) {
       this.chart.data = chartData;
@@ -21,8 +25,7 @@ class ChartRenderer {
     }
   }
 
-  prepareChartData(records) {
-    const config = records[0].constructor.getChartConfig();
+  prepareChartData(records, config) {
     return {
       datasets: config.datasets.map(datasetConfig => ({
         label: datasetConfig.label,
@@ -37,6 +40,26 @@ class ChartRenderer {
         backgroundColor: datasetConfig.color
       }))
     };
+  }
+
+  updateMetricSelector(metricOptions, metric) {
+    const metricSection = document.querySelector('.metric-section');
+    const metricButtons = document.querySelector('.metric-buttons');
+
+    if (metricOptions.length === 0) {
+      metricSection.style.display = 'none';
+      metricButtons.style.display = 'none';
+      return;
+    }
+
+    metricSection.style.display = 'inline';
+    metricButtons.style.display = 'flex';
+
+    metricButtons.innerHTML = metricOptions.map((option) =>
+      `<button class="metric-btn ${option.value === metric ? 'active' : ''}" data-metric="${option.value}">
+        ${option.label}
+      </button>`
+    ).join('');
   }
 
   getChartOptions() {

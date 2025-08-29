@@ -6,7 +6,7 @@ class SportsDashboard {
   constructor() {
     this.dataManager = new DataManager();
     this.filterManager = new FilterManager();
-    this.chartRenderer = new ChartRenderer('myChart');
+    this.chartRenderer = new ChartRenderer('mainChart');
 
     this.filterManager.addListener(() => this.updateChart());
     this.setupEventListeners();
@@ -19,9 +19,8 @@ class SportsDashboard {
 
   updateChart() {
     let records = this.dataManager.getRecords(this.filterManager.options.activity);
-    console.log(records);
     records = this.filterManager.applyFilters(records);
-    this.chartRenderer.render(records);
+    this.chartRenderer.render(records, this.filterManager.options);
   }
 
   setupEventListeners() {
@@ -48,6 +47,14 @@ class SportsDashboard {
         this.filterManager.setFilter('groupBy', group);
         return;
       }
+
+      if (target.matches('[data-metric]')) {
+        const metric = target.dataset.metric;
+        this.updateActiveClass('.metric-btn', target);
+        this.filterManager.setFilter('metric', metric);
+        return;
+      }
+
     });
   }
 

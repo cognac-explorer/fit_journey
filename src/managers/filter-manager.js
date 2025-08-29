@@ -3,7 +3,8 @@ class FilterManager {
     this.options = {
       year: 'All Time',
       groupBy: 'Day',
-      activity: 'RUN'
+      activity: 'RUN',
+      metric: 'total'
     };
     this.listeners = [];
   }
