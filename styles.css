@@ -86,8 +86,10 @@ body {
 }
 
 .main-content {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Full viewport height */
   padding: 2rem;
-  background: var(--bg-primary);
 }
 
 .header-section {
@@ -99,6 +101,7 @@ body {
   border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  flex-shrink: 0;
   border: 1px solid var(--border-color);
 }
 
@@ -145,6 +148,16 @@ body {
   background: var(--accent-blue);
   color: var(--bg-primary);
   border-color: var(--accent-blue);
+}
+
+.chart-container {
+  flex: 1;
+  min-height: 0; /* Important for flex child */
+}
+
+#mainChart {
+  height: 100% !important;
+  width: 100% !important;
 }
 
 @media (max-width: 768px) {
