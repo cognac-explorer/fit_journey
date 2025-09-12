@@ -1,17 +1,17 @@
 import { RunRecord } from '../records/run-record.js';
-import { BarsRecord } from '../records/bars-record.js';
+import { CalisthenicsRecord } from '../records/calisthenics-record.js';
 import { WeightsRecord } from '../records/weights-record.js';
 
 class DataManager {
   constructor() {
     this.runRecords = [];
-    this.barRecords = [];
+    this.CalisthenicsRecords = [];
     this.weightRecords = [];
   }
 
   async loadData() {
     this.runRecords = await this.loadActivity(RunRecord);
-    this.barRecords = await this.loadActivity(BarsRecord);
+    this.calisthenicsRecords = await this.loadActivity(CalisthenicsRecord);
     this.weightRecords = await this.loadActivity(WeightsRecord);
   }
 
@@ -27,7 +27,7 @@ class DataManager {
   getRecords(activity) {
     const recordMap = {
         'RUN': this.runRecords,
-        'BARS': this.barRecords,
+        'CALISTHENICS': this.calisthenicsRecords,
         'WEIGHTS': this.weightRecords
     };
     return recordMap[activity] || [];

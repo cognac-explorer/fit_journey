@@ -1,8 +1,8 @@
-class FilterManager {
+class StateManager {
   constructor() {
-    this.options = {
-      year: 'All Time',
-      groupBy: 'Day',
+    this.currentSettings = {
+      year: 'ALL_TIME',
+      groupBy: 'DAY',
       activity: 'RUN',
       metric: 'total'
     };
@@ -19,39 +19,39 @@ class FilterManager {
     this.listeners.push(callback);
   }
 
-  setFilter(key, value) {
-    this.options[key] = value;
+  setCurrentSetting(key, value) {
+    this.currentSettings[key] = value;
     this.notifyListeners();
   }
 
-  applyFilters(records) {
+  applySettings(records) {
     return this.timeGroupBy(this.timeFilter(records));
   }
 
   timeFilter(records) {
-    if (this.options.year === 'All Time') return records;
+    if (this.currentSettings.year === 'ALL_TIME') return records;
     let filtered = records.filter(record => {
       const recordYear = record.date.getFullYear().toString();
-      return recordYear === this.options.year;
+      return recordYear === this.currentSettings.year;
     });
     return filtered;
   }
 
   timeGroupBy(records) {
     const periodRecords = {};
-    const groupBy = this.options.groupBy;
+    const groupBy = this.currentSettings.groupBy;
 
-    if (groupBy === 'Day') return records;
+    if (groupBy === 'DAY') return records;
 
     records.forEach(row => {
       let periodDate;
       switch (groupBy) {
-        case 'Week':
+        case 'WEEK':
           periodDate = new Date(row.date);
           periodDate.setDate(row.date.getDate() - row.date.getDay());
           periodDate = periodDate.toISOString().split('T')[0];
           break;
-        case 'Month':
+        case 'MONTH':
           periodDate = new Date(row.date)
           periodDate.setDate(1);
           periodDate.setHours(0, 0, 0, 0);
@@ -75,4 +75,4 @@ class FilterManager {
   }
 }
 
-export { FilterManager };
+export { StateManager };

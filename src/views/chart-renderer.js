@@ -4,14 +4,21 @@ class ChartRenderer {
       this.ctx = document.getElementById(canvasId);
   }
 
-  render(records, options) {
+  render(records, activeSettings) {
     if (records.length === 0) return;
 
-    const config = records[0].constructor.getChartConfig(options.metric);
+    const config = records[0].constructor.ChartConfig;
     const metricOptions = records[0].constructor.metricsOptions;
 
-    this.updateMetricSelector(metricOptions, options.metric);
-    const chartData = this.prepareChartData(records, config);
+    let selectedMetric = activeSettings.metric;
+    // Check if the metric is not found in the array
+    if (metricOptions.length && !metricOptions.some(option => option.value === selectedMetric)) {
+      // If not found, use the first option
+      selectedMetric = metricOptions[0].value;
+    }
+
+    this.updateMetricSelector(metricOptions, selectedMetric);
+    const chartData = this.prepareChartData(records, config, selectedMetric);
 
     if (this.chart) {
       this.chart.data = chartData;
@@ -25,19 +32,29 @@ class ChartRenderer {
     }
   }
 
-  prepareChartData(records, config) {
+  prepareChartData(records, config, metric) {
     return {
-      datasets: config.datasets.map(datasetConfig => ({
+      datasets: config.map(datasetConfig => ({
         label: datasetConfig.label,
         data: records
           .filter(record => record.type === datasetConfig.type)
           .map(record => ({
             x: record.date,
-            y: record[datasetConfig.field],
+            y: record[datasetConfig.metric || metric],
             tooltip: record.getTooltipText()
           })),
         borderColor: datasetConfig.color,
-        backgroundColor: datasetConfig.color
+        backgroundColor: datasetConfig.color,
+        // dashed line for gaps longer than 32 days
+        spanGaps: false,
+        segment: {
+          borderDash: ctx => {
+            const prev = ctx.p0.parsed.x;
+            const curr = ctx.p1.parsed.x;  
+            const daysDiff = (curr - prev) / (1000 * 60 * 60 * 24);
+            return daysDiff > 32 ? [10, 15] : undefined;  // [10, 15] defines dashed line
+          }
+        }
       }))
     };
   }

@@ -2,17 +2,12 @@ class RunRecord {
   static COLUMNS = { DATE: 0, DISTANCE: 3, SPEED: 4, ROUTE: 5, NOTES: 6 };
   static CSV_FILE = "data/run.csv";
 
-  static metricsOptions = [];
-  static datasets = [
-    { type: 'run', label: 'Distance (km)', field: 'distance', color: 'blue' },
-    { type: 'run', label: 'Speed (km/h)', field: 'speed', color: 'red' }
+  static ChartConfig = [
+    { type: 'run', label: 'Distance (km)', metric: 'distance', color: 'blue' },
+    { type: 'run', label: 'Speed (km/h)', metric: 'speed', color: 'red' }
   ];
 
-  static getChartConfig() {
-    return {
-      datasets: this.datasets
-    };
-  }
+  static metricsOptions = [];
 
   constructor(data) {
     this.date = data.date;
@@ -20,6 +15,7 @@ class RunRecord {
     this.distance = data.distance;
     this.speed = data.speed;
     this.route = data.route;
+    this.routeFeatures = data.routeFeatures;
     this.notes = data.notes;
   }
 

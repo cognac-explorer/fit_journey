@@ -1,14 +1,14 @@
 import { DataManager } from './managers/data-manager.js';
 import { ChartRenderer } from './views/chart-renderer.js';
-import { FilterManager } from './managers/filter-manager.js';
+import { StateManager } from './managers/state-manager.js';
 
 class SportsDashboard {
   constructor() {
     this.dataManager = new DataManager();
-    this.filterManager = new FilterManager();
+    this.stateManager = new StateManager();
     this.chartRenderer = new ChartRenderer('mainChart');
 
-    this.filterManager.addListener(() => this.updateChart());
+    this.stateManager.addListener(() => this.updateChart());
     this.setupEventListeners();
   }
 
@@ -18,9 +18,9 @@ class SportsDashboard {
   }
 
   updateChart() {
-    let records = this.dataManager.getRecords(this.filterManager.options.activity);
-    records = this.filterManager.applyFilters(records);
-    this.chartRenderer.render(records, this.filterManager.options);
+    let records = this.dataManager.getRecords(this.stateManager.currentSettings.activity);
+    records = this.stateManager.applySettings(records);
+    this.chartRenderer.render(records, this.stateManager.currentSettings);
   }
 
   setupEventListeners() {
@@ -30,28 +30,28 @@ class SportsDashboard {
       if (target.matches('[data-activity]')) {
         const activity = target.dataset.activity;
         this.updateActiveClass('.nav-link', target);
-        this.filterManager.setFilter('activity', activity);
+        this.stateManager.setCurrentSetting('activity', activity);
         return;
       }
 
       if (target.matches('[data-year]')) {
         const year = target.dataset.year;
         this.updateActiveClass('.year-btn', target);
-        this.filterManager.setFilter('year', year);
+        this.stateManager.setCurrentSetting('year', year);
         return;
       }
 
       if (target.matches('[data-group]')) {
         const group = target.dataset.group;
         this.updateActiveClass('.group-btn', target);
-        this.filterManager.setFilter('groupBy', group);
+        this.stateManager.setCurrentSetting('groupBy', group);
         return;
       }
 
       if (target.matches('[data-metric]')) {
         const metric = target.dataset.metric;
         this.updateActiveClass('.metric-btn', target);
-        this.filterManager.setFilter('metric', metric);
+        this.stateManager.setCurrentSetting('metric', metric);
         return;
       }
 
