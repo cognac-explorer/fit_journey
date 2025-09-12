@@ -1,0 +1,31 @@
+name: Sync Google Sheets to CSV (data branch)
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"   # every Sunday at 03:00 UTC
+  workflow_dispatch:       # allow manual trigger
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout data branch
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          fetch-depth: 0    # fetch full history for force push if needed
+
+      - name: Download CSVs from Google Sheets
+        run: |
+          mkdir -p data
+          curl -L -o data/run.csv "https://docs.google.com/spreadsheets/d/1BuHhpk6a0JMsvePhKqSbCISE84l1qi-BzYmO74kLq94/export?format=csv&gid=0"
+          curl -L -o data/calisthenics.csv "https://docs.google.com/spreadsheets/d/1BuHhpk6a0JMsvePhKqSbCISE84l1qi-BzYmO74kLq94/export?format=csv&gid=2142817510"
+          curl -L -o data/weights.csv "https://docs.google.com/spreadsheets/d/1BuHhpk6a0JMsvePhKqSbCISE84l1qi-BzYmO74kLq94/export?format=csv&gid=1347708167"
+
+      - name: Commit and force-push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/*.csv
+          git commit -m "Update CSVs from Google Sheets" || echo "No changes to commit"
+          git push --force origin data
