@@ -1,6 +1,6 @@
 class RunRecord {
   static COLUMNS = { DATE: 0, DISTANCE: 3, SPEED: 4, ROUTE: 5, NOTES: 6 };
-  static CSV_FILE = "data/run.csv";
+  static CSV_FILE = "https://raw.githubusercontent.com/cognac-explorer/fit_journey/data/data/run.csv";
 
   static ChartConfig = [
     { type: 'run', label: 'Distance (km)', metric: 'distance', color: 'blue' },

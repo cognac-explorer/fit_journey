@@ -1,6 +1,6 @@
 class CalisthenicsRecord {
   static COLUMNS = { DATE: 0, TYPE: 1, FORMULA: 2, BEST_REPS: 3, TOTAL: 4, NOTES: 5 };
-  static CSV_FILE = "data/calisthenics.csv";
+  static CSV_FILE = "https://raw.githubusercontent.com/cognac-explorer/fit_journey/data/data/calisthenics.csv";
 
   static ChartConfig = [
     { type: 'pull_ups', label: 'Pull-ups', color: 'green' },

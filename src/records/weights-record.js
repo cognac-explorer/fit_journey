@@ -1,6 +1,6 @@
 class WeightsRecord {
   static COLUMNS = { DATE: 0, TYPE: 3, FORMULA: 4, BEST_SET: 5, BEST_WEIGHT: 6, TOTAL: 7, NOTES: 8, ADDITIONALS: 9 };
-  static CSV_FILE = "data/weights.csv";
+  static CSV_FILE = "https://raw.githubusercontent.com/cognac-explorer/fit_journey/data/data/weights.csv";
 
   static ChartConfig = [
     { type: 'squat', label: 'Squat', color: 'blue' },
