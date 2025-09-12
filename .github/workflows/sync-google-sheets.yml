@@ -14,6 +14,7 @@ jobs:
         with:
           ref: data
           fetch-depth: 0    # fetch full history for force push if needed
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download CSVs from Google Sheets
         run: |
@@ -29,3 +30,5 @@ jobs:
           git add data/*.csv
           git commit -m "Update CSVs from Google Sheets" || echo "No changes to commit"
           git push --force origin data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
