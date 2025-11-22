@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 from datetime import datetime
 from telegram import Update
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 GOOGLE_SHEET_NAME = os.getenv('GOOGLE_SHEET_NAME')
-CREDENTIALS_FILE = os.getenv('GOOGLE_CREDENTIALS_PATH')
+GOOGLE_CREDENTIALS_JSON = os.getenv('GOOGLE_CREDENTIALS_JSON')
 
 
 def get_sheets_client():
@@ -23,7 +24,14 @@ def get_sheets_client():
         'https://spreadsheets.google.com/feeds',
         'https://www.googleapis.com/auth/drive'
     ]
-    creds = Credentials.from_service_account_file(CREDENTIALS_FILE, scopes=scope)
+    # Parse credentials from JSON string stored in secret
+    if GOOGLE_CREDENTIALS_JSON:
+        creds_dict = json.loads(GOOGLE_CREDENTIALS_JSON)
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    else:
+        # Fallback to file (for local development)
+        creds = Credentials.from_service_account_file('credentials.json', scopes=scope)
+   
     return gspread.authorize(creds)
 
 def parse_workout(text):
