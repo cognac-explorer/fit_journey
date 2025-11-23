@@ -7,6 +7,8 @@ from telegram.ext import Application, CommandHandler, MessageHandler, filters, C
 import gspread
 from google.oauth2.service_account import Credentials
 from dotenv import load_dotenv
+from threading import Thread
+from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
 load_dotenv()
@@ -72,8 +74,30 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Should log errors not related to this code"""
     logger.error(f'Update {update} caused error {context.error}')
 
-def main():
+# Simple HTTP server for Cloud Run health checks
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/plain')
+        self.end_headers()
+        self.wfile.write(b'OK')
     
+    def log_message(self, format, *args):
+        pass
+
+def run_health_check_server():
+    """Run a simple HTTP server for Cloud Run health checks."""
+    port = int(os.environ.get('PORT', 8080))
+    server = HTTPServer(('', port), HealthCheckHandler)
+    logger.info(f"Health check server running on port {port}")
+    server.serve_forever()
+
+
+def main():
+    # Start health check server in a separate thread for Cloud Run
+    health_thread = Thread(target=run_health_check_server, daemon=True)
+    health_thread.start()
+
     application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, log_workout))
